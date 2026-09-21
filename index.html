@@ -250,8 +250,6 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 .task-links-row{display:flex;gap:10px;flex-wrap:nowrap;align-items:center}
 .task-text-btn{background:none;border:none;color:#6c40e0;font-size:11.5px;font-weight:600;display:flex;align-items:center;gap:4px;padding:2px 0;cursor:pointer;white-space:nowrap;flex:0 0 auto}
 .task-text-btn:hover{text-decoration:underline}
-.task-chip-followup{background:#f5f5fa;color:#676879;border:1px solid #e6e9ef;cursor:pointer}
-.task-chip-followup:hover{background:#eee8ff;color:#6c40e0}
 .task-bottom{margin-top:auto;padding-top:9px;border-top:1px solid #ececf0}
 .task-status-select{border:1px solid #e6e9ef;border-radius:7px;padding:5px 7px;font-size:11.5px;font-weight:600;background:#f7f7fa;width:100%}
 .task-status-select[data-status="nao_iniciada"]{color:#8891a5}
@@ -275,10 +273,6 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 .task-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .task-close-x{background:none;border:none;color:#8a8a99;width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .task-close-x:hover{background:#f5f5fa}
-.task-followup-item{border:1px solid #e6e9ef;border-radius:8px;padding:9px 11px;margin-bottom:7px;background:#fafbfc}
-.task-followup-time{font-size:10.5px;color:#8a8a99;margin-bottom:3px}
-.task-followup-text{font-size:12.5px;color:#323338;white-space:pre-wrap}
-.task-followup-empty{color:#8a8a99;font-size:12px;padding:8px 0}
 .task-desc-view{font-size:13px;line-height:1.6;white-space:pre-wrap;color:#323338}
 .task-confirm-box{max-width:360px;text-align:center;padding:6px}
 .task-confirm-box p{color:#8a8a99;font-size:13px;margin:8px 0 18px}
@@ -321,6 +315,8 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 .info-geral-item .exp-value{padding:10px 12px 0}
 .info-geral-date-row{display:flex;align-items:center;gap:8px;padding:6px 12px 10px}
 .info-geral-remove{margin-left:auto;color:#c7c7d1;cursor:pointer;font-size:15px}
+.info-geral-follow-icon{color:#8a8a99;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;margin-left:6px;white-space:nowrap}
+.info-geral-follow-icon svg{width:13px;height:13px;color:#6c40e0}
 .info-geral-remove:hover{color:#e2445c}
 .info-geral-date-row label{font-size:11px;color:#8a8a99;font-weight:600}
 .required-star{color:#e2445c;margin-left:2px}
@@ -821,9 +817,9 @@ function fixRetiredKam(r){
 }
 function migrateInfoGerais(r){
   if(Array.isArray(r.info_gerais)){
-    r.info_gerais=r.info_gerais.map(x=>({nota:x.nota||'',data:x.data||''}));
+    r.info_gerais=r.info_gerais.map(x=>({nota:x.nota||'',data:x.data||'',follow:x.follow||'',followData:x.followData||''}));
   }else if(r.info_geral||r.info_geral_data){
-    r.info_gerais=[{nota:r.info_geral||'',data:r.info_geral_data||''}];
+    r.info_gerais=[{nota:r.info_geral||'',data:r.info_geral_data||'',follow:'',followData:''}];
   }else{
     r.info_gerais=[];
   }
@@ -1109,8 +1105,8 @@ function renderDetail(){
   h+=`<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">Informações Gerais</span></div><div class="exp-block-body">`;
   infoGerais.forEach((ig,idx)=>{
     h+=`<div class="info-geral-item">`+
-       `<div class="exp-value editable ${ig.nota?'':'empty'}" contenteditable="true" spellcheck="false" data-idx="${idx}" data-ifield="nota" style="min-height:28px;white-space:pre-wrap">${ig.nota?esc(ig.nota):'<span class="cell-empty">Escrever nota...</span>'}</div>`+
-       `<div class="info-geral-date-row"><label>Data<span class="required-star">*</span></label><input type="date" class="info-geral-date${ig.data?'':' required-empty'}" data-idx="${idx}" data-ifield="data" value="${esc(ig.data||'')}"><span class="info-geral-remove" data-idx="${idx}">×</span></div>`+
+       `<div class="exp-value editable editable-multiline ${ig.nota?'':'empty'}" contenteditable="true" spellcheck="false" data-idx="${idx}" data-ifield="nota" style="min-height:28px;white-space:pre-wrap">${ig.nota?esc(ig.nota):'<span class="cell-empty">Escrever nota...</span>'}</div>`+
+       `<div class="info-geral-date-row"><label>Data<span class="required-star">*</span></label><input type="date" class="info-geral-date${ig.data?'':' required-empty'}" data-idx="${idx}" data-ifield="data" value="${esc(ig.data||'')}"><span class="info-geral-follow-icon">${TASK_ICON.chat} Follow</span><input type="date" class="info-geral-date" data-idx="${idx}" data-ifield="followData" value="${esc(ig.followData||'')}"><span class="info-geral-remove" data-idx="${idx}">×</span></div>`+
        `</div>`;
   });
   h+=`<span class="exp-add-cat" id="addInfoGeralBtn">+ Adicionar</span>`;
@@ -1118,7 +1114,7 @@ function renderDetail(){
   BLOCKS.forEach(([f,l])=>{
     const v=r[f]||'';
     const bh=f==='plano_media'?'min-height:44px':'min-height:32px';
-    h+=`<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">${l}</span></div><div class="exp-block-body"><div class="exp-value editable ${v?'':'empty'}" contenteditable="true" spellcheck="false" data-id="${esc(r.id)}" data-field="${f}" style="${bh};white-space:pre-wrap">${v?esc(v):'<span class="cell-empty">Preencher...</span>'}</div></div></div>`;
+    h+=`<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">${l}</span></div><div class="exp-block-body"><div class="exp-value editable editable-multiline ${v?'':'empty'}" contenteditable="true" spellcheck="false" data-id="${esc(r.id)}" data-field="${f}" style="${bh};white-space:pre-wrap">${v?esc(v):'<span class="cell-empty">Preencher...</span>'}</div></div></div>`;
   });
   h+=renderTasksSection(r);
   h+='</div></div>';
@@ -1140,7 +1136,9 @@ function updInfoGeralField(t){
   const r=state.rows.find(x=>x.id===state.selectedId);if(!r)return;
   const idx=parseInt(t.dataset.idx,10);if(!r.info_gerais||!r.info_gerais[idx])return;
   const field=t.dataset.ifield;
-  let v=(t.tagName==='INPUT'?t.value:t.innerText).replace(/\n/g,' ').trim();
+  const isMulti=t.matches('.editable-multiline');
+  let raw=t.tagName==='INPUT'?t.value:t.innerText;
+  let v=isMulti?raw.trim():raw.replace(/\n/g,' ').trim();
   if(v==='Escrever nota...')v='';
   r.info_gerais[idx][field]=v;
   persist();render();
@@ -1152,7 +1150,10 @@ function removeInfoGeral(idx){
 }
 function updField(t){
   const r=state.rows.find(x=>x.id===t.dataset.id);if(!r)return;
-  let v=(t.tagName==='INPUT'?t.value:t.innerText).replace(/\n/g,' ').trim();if(v==='—'||v==='')v='';
+  const isMulti=t.matches('.editable-multiline');
+  let raw=t.tagName==='INPUT'?t.value:t.innerText;
+  let v=isMulti?raw.trim():raw.replace(/\n/g,' ').trim();
+  if(v==='—'||v==='')v='';
   if(t.dataset.field==='iata')v=v.toUpperCase();
   r[t.dataset.field]=v;persist();render();
 }
@@ -1201,7 +1202,6 @@ const TASK_ICON={
 };
 let taskFilters={status:"todas",priority:"todas",category:"todas",recurrence:"todas",search:""};
 let taskEditingId=null;
-let taskFollowupId=null;
 let taskDeleteId=null;
 const TASK_ASSIGNEES={
   'Carolina Movio':'carolina.movio@decolar.com',
@@ -1291,7 +1291,6 @@ function taskCardHTML(t){
   const cat=TASK_CAT_COLORS[t.category]||TASK_CAT_COLORS['Tarefas'];
   const isRecurring=t.recurrence&&t.recurrence.type!=='none';
   const tags=(t.tags||[]).filter(Boolean);
-  const followCount=(t.followUps||[]).length;
   return `<div class="task-card ${t.status==='concluida'?'is-done':''}" style="--p-color:${TASK_PRIORITY_COLOR[t.priority]}" data-tid="${t.id}">
     <div class="task-top">
       <div class="task-title ${t.status==='concluida'?'strike':''}">${esc(t.title)}</div>
@@ -1314,7 +1313,6 @@ function taskCardHTML(t){
     <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}</div>
     <div class="task-links-row">
       ${t.description?`<span class="task-text-btn" data-action="task-view-desc">${TASK_ICON.eye} Ver descrição</span>`:''}
-      <span class="task-chip task-chip-followup" data-action="task-followup">${TASK_ICON.chat} Follow-up ${followCount>0?`<b>(${followCount})</b>`:''}</span>
     </div>
     <div class="task-bottom">
       <select class="task-status-select" data-action="task-status-change" data-status="${t.status}">
@@ -1370,13 +1368,6 @@ function updTaskStatus(id,newStatus){
   t.status=newStatus;
   t.completedAt=wasCompleting?new Date().toISOString():(newStatus!=='concluida'?null:t.completedAt);
   persist();render();
-}
-function addTaskFollowup(id,text){
-  const r=state.rows.find(x=>x.id===state.selectedId);if(!r)return;
-  const t=(r.tasks||[]).find(x=>x.id===id);if(!t)return;
-  if(!Array.isArray(t.followUps))t.followUps=[];
-  t.followUps.push({id:taskUid(),text,timestamp:new Date().toISOString()});
-  persist();
 }
 function saveTaskForm(rowId){
   const r=state.rows.find(x=>x.id===rowId);if(!r)return;
@@ -1455,30 +1446,6 @@ function openTaskDescModal(rowId,id){
   </div></div>`;
   document.body.appendChild(wrap);
 }
-function openTaskFollowupModal(rowId,id){
-  taskFollowupId=id;
-  renderTaskFollowupModal(rowId);
-}
-function renderTaskFollowupModal(rowId){
-  const r=state.rows.find(x=>x.id===rowId);if(!r)return;
-  const t=(r.tasks||[]).find(x=>x.id===taskFollowupId);if(!t)return;
-  const items=(t.followUps||[]).slice().reverse();
-  const wrap=document.getElementById('taskModalRoot')||document.createElement('div');
-  wrap.id='taskModalRoot';
-  wrap.innerHTML=`<div class="task-overlay" data-action="task-overlay-close"><div class="task-modal" data-stop>
-    <div class="task-modal-header"><h3>Follow-up</h3><span class="task-close-x" data-action="task-close-modal">${TASK_ICON.close}</span></div>
-    <div class="task-modal-body">
-      <div class="task-meta" style="margin-bottom:12px">${esc(t.title)}</div>
-      <div id="taskFollowupList">${items.length?items.map(f=>`<div class="task-followup-item"><div class="task-followup-time">${taskFmtDateTime(f.timestamp)}</div><div class="task-followup-text">${esc(f.text)}</div></div>`).join(''):'<div class="task-followup-empty">Nenhuma observação registrada ainda.</div>'}</div>
-      <div class="task-form-row" style="margin-top:14px"><label>Nova observação</label><textarea id="taskFldFollowupText" placeholder="Escreva uma atualização sobre esta tarefa..."></textarea></div>
-    </div>
-    <div class="task-modal-footer">
-      <span class="task-btn task-btn-ghost" data-action="task-close-modal">Fechar</span>
-      <span class="task-btn task-btn-primary" data-action="task-add-followup" data-rowid="${esc(rowId)}">Adicionar observação</span>
-    </div>
-  </div></div>`;
-  if(!document.body.contains(wrap))document.body.appendChild(wrap);
-}
 function openTaskDeleteConfirm(rowId,id){
   taskDeleteId=id;
   const r=state.rows.find(x=>x.id===rowId);if(!r)return;
@@ -1518,7 +1485,6 @@ function wireTasksEvents(r){
       if(action==='task-edit')openTaskModal(r.id,id);
       else if(action==='task-delete')openTaskDeleteConfirm(r.id,id);
       else if(action==='task-view-desc')openTaskDescModal(r.id,id);
-      else if(action==='task-followup')openTaskFollowupModal(r.id,id);
       else if(action==='task-transfer-icon'){
         const select=card.querySelector('.task-assignee-select');
         if(select){
@@ -1557,10 +1523,6 @@ document.addEventListener('click',e=>{
   const a=actionEl.dataset.action;
   if(a==='task-close-modal')closeTaskModal();
   else if(a==='task-save')saveTaskForm(actionEl.dataset.rowid);
-  else if(a==='task-add-followup'){
-    const text=document.getElementById('taskFldFollowupText').value.trim();
-    if(text){addTaskFollowup(taskFollowupId,text);renderTaskFollowupModal(actionEl.dataset.rowid);render();}
-  }
   else if(a==='task-confirm-delete'){removeTask(taskDeleteId);closeTaskModal();}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTaskModal();});
@@ -1633,7 +1595,7 @@ el.detailPane.addEventListener('focusout',e=>{
 el.detailPane.addEventListener('change',e=>{
   if(e.target.matches('.info-geral-date'))updInfoGeralField(e.target);
 });
-el.detailPane.addEventListener('keydown',e=>{if(e.target.matches('.editable')&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
+el.detailPane.addEventListener('keydown',e=>{if(e.target.matches('.editable')&&!e.target.matches('.editable-multiline')&&e.key==='Enter'){e.preventDefault();e.target.blur();}});
 document.getElementById('toggleListBtn')?.addEventListener('click',()=>{
   viewMode=viewMode==='list'?'both':'list';
   applyViewMode();
