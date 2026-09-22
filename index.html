@@ -1229,13 +1229,9 @@ function removeContact(idx){
   persist();render();
 }
 
-const TASK_CATEGORIES=["Campanhas","Análises","Negociações","Apresentações","Relatórios","Tarefas","Condição comercial Tática","Condição comercial Estrutural","Contrato comercial (negociação/assinatura)","Análise Comercial/Relatório Comercial","Media Sales","Tema de pós-vendas/Reembolso","Apresentação ou Reunião comercial","NDC/GDS","Pagamentos/Faturas/Financeiro","Treinamento/Eventos","Outros"];
+const TASK_CATEGORIES=["Campanhas","Tarefas","Condição comercial Tática","Condição comercial Estrutural","Contrato comercial (negociação/assinatura)","Análise Comercial/Relatório Comercial","Media Sales","Tema de pós-vendas/Reembolso","Apresentação ou Reunião comercial","NDC/GDS","Pagamentos/Faturas/Financeiro","Treinamento/Eventos","Outros"];
 const TASK_CAT_COLORS={
   "Campanhas":{bg:"#DDEEFF",fg:"#0086C0"},
-  "Análises":{bg:"#EEECFF",fg:"#5B4FE0"},
-  "Negociações":{bg:"#FDE9DE",fg:"#C85A24"},
-  "Apresentações":{bg:"#E1F3F4",fg:"#1D8A96"},
-  "Relatórios":{bg:"#F3E6F7",fg:"#8E3FA8"},
   "Tarefas":{bg:"#E9EEF5",fg:"#4C6B8A"},
   "Condição comercial Tática":{bg:"#FFF3D6",fg:"#9A6B00"},
   "Condição comercial Estrutural":{bg:"#FDEAEA",fg:"#C0392B"},
@@ -1249,7 +1245,7 @@ const TASK_CAT_COLORS={
   "Treinamento/Eventos":{bg:"#F5EAFB",fg:"#7A3FA8"},
   "Outros":{bg:"#EFEFEF",fg:"#666666"}
 };
-const TASK_CATEGORY_MIGRATION={"Reuniões":"Tarefas","Campanha":"Campanhas"};
+const TASK_CATEGORY_MIGRATION={"Reuniões":"Tarefas","Campanha":"Campanhas","Análises":"Análise Comercial/Relatório Comercial","Relatórios":"Análise Comercial/Relatório Comercial","Apresentações":"Apresentação ou Reunião comercial","Negociações":"Contrato comercial (negociação/assinatura)"};
 const TASK_PRIORITY_LABEL={alta:"Alta",media:"Média",baixa:"Baixa"};
 const TASK_PRIORITY_COLOR={alta:"#D64550",media:"#E8A33D",baixa:"#6c40e0"};
 const TASK_STATUS_LABEL={nao_iniciada:"Não Iniciada",em_andamento:"Em Andamento",concluida:"Concluída"};
