@@ -826,6 +826,7 @@ async function load(){
   if(kamDetailsSynced)persist();
   const tasksSynced=await ensureTasksImported();
   if(tasksSynced)persist();
+  checkDueTasksAndNotify();
 }
 const RETIRED_KAMS=['Mercedes Gallegos Del Santo','Jean Wilson Combita Penagos','Francisca Bedoya Belair','Wilson Loayza'];
 const KAM_RENAMES={'Jessica Silva':'Jessica Aparecida'};
@@ -1280,10 +1281,46 @@ function taskAssigneeOptionsHTML(current){
   });
   return h;
 }
+// Cole aqui a URL do Incoming Webhook que o Slack te deu (algo tipo https://hooks.slack.com/services/XXX/YYY/ZZZ).
+// Enquanto estiver vazia, as notificações só aparecem no console do navegador (F12), sem sair de fato.
+const SLACK_WEBHOOK_URL='https://hooks.slack.com/services/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';
+function sendSlackMessage(text){
+  if(!SLACK_WEBHOOK_URL){
+    console.log('[Slack em standby — cole a URL do webhook no código] Mensagem que seria enviada:',text);
+    return;
+  }
+  fetch(SLACK_WEBHOOK_URL,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'payload='+encodeURIComponent(JSON.stringify({text}))
+  }).catch(()=>{});
+}
 function notifyTaskAssignTransfer(row,task,assigneeName){
-  const email=TASK_ASSIGNEES[assigneeName]||'';
-  const msg=`🔔 ${assigneeName}, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
-  console.log('[Slack em standby] Notificação pendente:',{assigneeName,email,msg});
+  const msg=`🔔 *${assigneeName}*, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
+  sendSlackMessage(msg);
+}
+function notifyTaskDueSoon(row,task,assigneeName){
+  const ds=taskDueState(task);
+  const label=ds==='atrasada'?'está *atrasada*':'vence *hoje*';
+  const msg=`⏰ *${assigneeName}*, a tarefa "${task.title||'(sem título)'}" (${row.name}) ${label} (${taskFmtDate(task.dueDate)}).`;
+  sendSlackMessage(msg);
+}
+function checkDueTasksAndNotify(){
+  const today=new Date().toISOString().slice(0,10);
+  let changed=false;
+  state.rows.forEach(row=>{
+    (row.tasks||[]).forEach(t=>{
+      if(t.status==='concluida'||!t.dueDate||!t.responsavel)return;
+      const ds=taskDueState(t);
+      if(ds!=='hoje'&&ds!=='atrasada')return;
+      if(t.lastDueAlertDate===today)return;
+      notifyTaskDueSoon(row,t,t.responsavel);
+      t.lastDueAlertDate=today;
+      changed=true;
+    });
+  });
+  if(changed)persist();
 }
 
 function taskUid(){return "t_"+Date.now().toString(36)+"_"+Math.random().toString(36).slice(2,8);}
@@ -1315,7 +1352,8 @@ function migrateTasks(r){
       responsavel:t.responsavel||'',
       recurrence:t.recurrence||{type:'none'},status:t.status||'nao_iniciada',
       followUps:Array.isArray(t.followUps)?t.followUps:[],
-      createdAt:t.createdAt||new Date().toISOString(),completedAt:t.completedAt||null
+      createdAt:t.createdAt||new Date().toISOString(),completedAt:t.completedAt||null,
+      lastDueAlertDate:t.lastDueAlertDate||''
     };
   });
   return r;
@@ -1437,10 +1475,12 @@ function saveTaskForm(rowId){
   const dueDate=document.getElementById('taskFldDue').value||'';
   const requestedBy=document.getElementById('taskFldRequestedBy').value.trim();
   const tags=document.getElementById('taskFldTags').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const responsavel=document.getElementById('taskFldResponsavel')?document.getElementById('taskFldResponsavel').value:'';
   if(taskEditingId){
     const t=(r.tasks||[]).find(x=>x.id===taskEditingId);if(!t)return;
+    const prevResp=t.responsavel||'';
     t.title=title;t.description=description;t.priority=priority;t.category=category;
-    t.dueDate=dueDate;t.requestedBy=requestedBy;t.tags=tags;
+    t.dueDate=dueDate;t.requestedBy=requestedBy;t.tags=tags;t.responsavel=responsavel;
     const statusField=document.getElementById('taskFldStatus');
     if(statusField){
       const newStatus=statusField.value;
@@ -1449,12 +1489,19 @@ function saveTaskForm(rowId){
       if(wasCompleting)t.completedAt=new Date().toISOString();
       else if(newStatus!=='concluida')t.completedAt=null;
     }
+    persist();closeTaskModal();render();
+    if(responsavel&&responsavel!==prevResp)notifyTaskAssignTransfer(r,t,responsavel);
   }else{
     if(!Array.isArray(r.tasks))r.tasks=[];
-    r.tasks.push({id:taskUid(),title,description,priority,category,dueDate,requestedBy,tags,responsavel:'',recurrence:{type:'none'},status:'nao_iniciada',followUps:[],createdAt:new Date().toISOString(),completedAt:null});
+    const newTask={id:taskUid(),title,description,priority,category,dueDate,requestedBy,tags,responsavel,recurrence:{type:'none'},status:'nao_iniciada',followUps:[],createdAt:new Date().toISOString(),completedAt:null};
+    r.tasks.push(newTask);
+    persist();closeTaskModal();render();
+    const creator=normStrLoose(requestedBy);
+    const assignee=normStrLoose(responsavel);
+    if(responsavel&&assignee!==creator)notifyTaskAssignTransfer(r,newTask,responsavel);
   }
-  persist();closeTaskModal();render();
 }
+function normStrLoose(s){return (s||'').trim().toLowerCase();}
 function closeTaskModal(){const el=document.getElementById('taskModalRoot');if(el)el.remove();}
 function openTaskModal(rowId,id){
   taskEditingId=id||null;
@@ -1479,6 +1526,7 @@ function openTaskModal(rowId,id){
         <div class="task-form-row"><label>Prazo / vencimento (opcional)</label><input type="date" id="taskFldDue" min="2020-01-01" max="2035-12-31" value="${t&&t.dueDate?t.dueDate:''}"></div>
         <div class="task-form-row"><label>Solicitado por</label><input type="text" id="taskFldRequestedBy" value="${t?esc(t.requestedBy||''):''}" placeholder="Nome do solicitante"></div>
       </div>
+      <div class="task-form-row"><label>Responsável</label><select id="taskFldResponsavel">${taskAssigneeOptionsHTML(t?t.responsavel:'')}</select></div>
       <div class="task-form-row"><label>Tags (separadas por vírgula)</label><input type="text" id="taskFldTags" value="${t?(t.tags||[]).join(', '):''}" placeholder="Ex.: urgente, renovação"></div>
       ${t?`<div class="task-form-row"><label>Status</label><select id="taskFldStatus">
         <option value="nao_iniciada" ${t.status==='nao_iniciada'?'selected':''}>Não Iniciada</option>
