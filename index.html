@@ -826,6 +826,7 @@ async function load(){
   if(kamDetailsSynced)persist();
   const tasksSynced=await ensureTasksImported();
   if(tasksSynced)persist();
+  await loadSlackWebhookUrl();
   checkDueTasksAndNotify();
 }
 const RETIRED_KAMS=['Mercedes Gallegos Del Santo','Jean Wilson Combita Penagos','Francisca Bedoya Belair','Wilson Loayza'];
@@ -1283,7 +1284,16 @@ function taskAssigneeOptionsHTML(current){
 }
 // Cole aqui a URL do Incoming Webhook que o Slack te deu (algo tipo https://hooks.slack.com/services/XXX/YYY/ZZZ).
 // Enquanto estiver vazia, as notificações só aparecem no console do navegador (F12), sem sair de fato.
-const SLACK_WEBHOOK_URL='https://hooks.slack.com/services/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';
+// A URL do webhook NÃO fica mais escrita aqui — fica guardada no Firebase e é buscada quando o CRM abre.
+// Isso evita que o scanner de segurança do GitHub/Slack encontre e revogue a URL automaticamente.
+const SLACK_WEBHOOK_KEY=STORAGE_KEY+"_slack_webhook";
+let SLACK_WEBHOOK_URL='';
+async function loadSlackWebhookUrl(){
+  try{
+    const w=await window.storage.get(SLACK_WEBHOOK_KEY,false);
+    SLACK_WEBHOOK_URL=w&&w.value?w.value:'';
+  }catch(e){SLACK_WEBHOOK_URL='';}
+}
 function sendSlackMessage(text){
   if(!SLACK_WEBHOOK_URL){
     console.log('[Slack em standby — cole a URL do webhook no código] Mensagem que seria enviada:',text);
@@ -1346,7 +1356,7 @@ function migrateTasks(r){
     if(TASK_CATEGORY_MIGRATION[cat])cat=TASK_CATEGORY_MIGRATION[cat];
     if(!TASK_CATEGORIES.includes(cat))cat='Tarefas';
     return{
-      id:t.id||taskUid(),title:t.title||'',description:t.description||'',
+      id:t.id||taskUid(),title:t.title||'',email:t.email||'',description:t.description||'',
       priority:t.priority||'media',category:cat,dueDate:t.dueDate||'',
       tags:Array.isArray(t.tags)?t.tags:[],requestedBy:t.requestedBy||'',
       responsavel:t.responsavel||'',
@@ -1386,7 +1396,6 @@ function taskCardHTML(t){
     'Vence '+taskFmtDate(t.dueDate);
   const cat=TASK_CAT_COLORS[t.category]||TASK_CAT_COLORS['Tarefas'];
   const isRecurring=t.recurrence&&t.recurrence.type!=='none';
-  const tags=(t.tags||[]).filter(Boolean);
   return `<div class="task-card ${t.status==='concluida'?'is-done':''}" style="--p-color:${TASK_PRIORITY_COLOR[t.priority]}" data-tid="${t.id}">
     <div class="task-top">
       <div class="task-title ${t.status==='concluida'?'strike':''}">${esc(t.title)}</div>
@@ -1400,13 +1409,12 @@ function taskCardHTML(t){
       <span class="task-chip task-chip-due ${ds}">${dueText}</span>
       ${isRecurring?`<span class="task-chip task-chip-recur">${TASK_ICON.repeat} ${taskRecurLabel(t)}</span>`:''}
     </div>
-    ${tags.length?`<div class="task-chip-row">${tags.map(tg=>`<span class="task-chip task-chip-tag">${esc(tg)}</span>`).join('')}</div>`:''}
     <div class="task-transfer-row">
       <span class="task-transfer-icon" data-action="task-transfer-icon" title="Transferir tarefa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 8h11l-3-3"/><path d="M17 16H6l3 3"/></svg></span>
       <select class="task-assignee-select" data-action="task-assignee-change">${taskAssigneeOptionsHTML(t.responsavel)}</select>
       <input type="date" class="task-transfer-date" min="2020-01-01" max="2035-12-31" data-action="task-transfer-date" value="${esc(t.dueDate||'')}">
     </div>
-    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}</div>
+    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}${t.email?' · E-mail: <b>'+esc(t.email)+'</b>':''}</div>
     <div class="task-links-row">
       ${t.description?`<span class="task-text-btn" data-action="task-view-desc">${TASK_ICON.eye} Ver descrição</span>`:''}
     </div>
@@ -1469,31 +1477,28 @@ function saveTaskForm(rowId){
   const r=state.rows.find(x=>x.id===rowId);if(!r)return;
   const title=document.getElementById('taskFldTitle').value.trim();
   if(!title){flash('Informe um título para a tarefa');return;}
+  const email=document.getElementById('taskFldEmail').value.trim();
   const description=document.getElementById('taskFldDesc').value.trim();
   const priority=document.getElementById('taskFldPriority').value;
   const category=document.getElementById('taskFldCategory').value;
   const dueDate=document.getElementById('taskFldDue').value||'';
   const requestedBy=document.getElementById('taskFldRequestedBy').value.trim();
-  const tags=document.getElementById('taskFldTags').value.split(',').map(s=>s.trim()).filter(Boolean);
   const responsavel=document.getElementById('taskFldResponsavel')?document.getElementById('taskFldResponsavel').value:'';
+  const status=document.getElementById('taskFldStatus').value;
   if(taskEditingId){
     const t=(r.tasks||[]).find(x=>x.id===taskEditingId);if(!t)return;
     const prevResp=t.responsavel||'';
-    t.title=title;t.description=description;t.priority=priority;t.category=category;
-    t.dueDate=dueDate;t.requestedBy=requestedBy;t.tags=tags;t.responsavel=responsavel;
-    const statusField=document.getElementById('taskFldStatus');
-    if(statusField){
-      const newStatus=statusField.value;
-      const wasCompleting=newStatus==='concluida'&&t.status!=='concluida';
-      t.status=newStatus;
-      if(wasCompleting)t.completedAt=new Date().toISOString();
-      else if(newStatus!=='concluida')t.completedAt=null;
-    }
+    t.title=title;t.email=email;t.description=description;t.priority=priority;t.category=category;
+    t.dueDate=dueDate;t.requestedBy=requestedBy;t.responsavel=responsavel;
+    const wasCompleting=status==='concluida'&&t.status!=='concluida';
+    t.status=status;
+    if(wasCompleting)t.completedAt=new Date().toISOString();
+    else if(status!=='concluida')t.completedAt=null;
     persist();closeTaskModal();render();
     if(responsavel&&responsavel!==prevResp)notifyTaskAssignTransfer(r,t,responsavel);
   }else{
     if(!Array.isArray(r.tasks))r.tasks=[];
-    const newTask={id:taskUid(),title,description,priority,category,dueDate,requestedBy,tags,responsavel,recurrence:{type:'none'},status:'nao_iniciada',followUps:[],createdAt:new Date().toISOString(),completedAt:null};
+    const newTask={id:taskUid(),title,email,description,priority,category,dueDate,requestedBy,tags:[],responsavel,recurrence:{type:'none'},status,followUps:[],createdAt:new Date().toISOString(),completedAt:status==='concluida'?new Date().toISOString():null};
     r.tasks.push(newTask);
     persist();closeTaskModal();render();
     const creator=normStrLoose(requestedBy);
@@ -1513,6 +1518,7 @@ function openTaskModal(rowId,id){
     <div class="task-modal-header"><h3>${t?'Editar tarefa':'Nova tarefa'}</h3><span class="task-close-x" data-action="task-close-modal">${TASK_ICON.close}</span></div>
     <div class="task-modal-body">
       <div class="task-form-row"><label>Título</label><input type="text" id="taskFldTitle" value="${t?esc(t.title):''}" placeholder="Ex.: Renovar condição comercial"></div>
+      <div class="task-form-row"><label>E-mail</label><input type="email" id="taskFldEmail" value="${t?esc(t.email||''):''}" placeholder="E-mail"></div>
       <div class="task-form-row"><label>Descrição</label><textarea id="taskFldDesc" placeholder="Detalhes da tarefa (opcional)">${t?esc(t.description||''):''}</textarea></div>
       <div class="task-form-grid">
         <div class="task-form-row"><label>Prioridade</label><select id="taskFldPriority">
@@ -1527,12 +1533,11 @@ function openTaskModal(rowId,id){
         <div class="task-form-row"><label>Solicitado por</label><input type="text" id="taskFldRequestedBy" value="${t?esc(t.requestedBy||''):''}" placeholder="Nome do solicitante"></div>
       </div>
       <div class="task-form-row"><label>Responsável</label><select id="taskFldResponsavel">${taskAssigneeOptionsHTML(t?t.responsavel:'')}</select></div>
-      <div class="task-form-row"><label>Tags (separadas por vírgula)</label><input type="text" id="taskFldTags" value="${t?(t.tags||[]).join(', '):''}" placeholder="Ex.: urgente, renovação"></div>
-      ${t?`<div class="task-form-row"><label>Status</label><select id="taskFldStatus">
-        <option value="nao_iniciada" ${t.status==='nao_iniciada'?'selected':''}>Não Iniciada</option>
-        <option value="em_andamento" ${t.status==='em_andamento'?'selected':''}>Em Andamento</option>
-        <option value="concluida" ${t.status==='concluida'?'selected':''}>Concluída</option>
-      </select></div>`:''}
+      <div class="task-form-row"><label>Status<span class="required-star">*</span></label><select id="taskFldStatus" required>
+        <option value="nao_iniciada" ${!t||t.status==='nao_iniciada'?'selected':''}>Não Iniciada</option>
+        <option value="em_andamento" ${t&&t.status==='em_andamento'?'selected':''}>Em Andamento</option>
+        <option value="concluida" ${t&&t.status==='concluida'?'selected':''}>Concluída</option>
+      </select></div>
     </div>
     <div class="task-modal-footer">
       <span class="task-btn task-btn-ghost" data-action="task-close-modal">Cancelar</span>
@@ -1661,8 +1666,8 @@ function buildContactsPreviewHTML(r){
 function buildTasksPreviewHTML(r){
   const items=r.tasks||[];
   if(!items.length)return '<div class="exp-export-preview-empty">Nenhuma tarefa cadastrada.</div>';
-  let h='<table class="exp-export-preview-table"><tr><th>Título</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Prazo</th></tr>';
-  items.forEach(t=>{h+=`<tr><td>${esc(t.title||'')}</td><td>${esc(t.category||'')}</td><td>${esc(TASK_PRIORITY_LABEL[t.priority]||t.priority||'')}</td><td>${esc(TASK_STATUS_LABEL[t.status]||t.status||'')}</td><td>${t.dueDate?esc(formatDateDisplay(t.dueDate)):''}</td></tr>`;});
+  let h='<table class="exp-export-preview-table"><tr><th>Título</th><th>E-mail</th><th>Categoria</th><th>Prioridade</th><th>Status</th><th>Prazo</th></tr>';
+  items.forEach(t=>{h+=`<tr><td>${esc(t.title||'')}</td><td>${esc(t.email||'')}</td><td>${esc(t.category||'')}</td><td>${esc(TASK_PRIORITY_LABEL[t.priority]||t.priority||'')}</td><td>${esc(TASK_STATUS_LABEL[t.status]||t.status||'')}</td><td>${t.dueDate?esc(formatDateDisplay(t.dueDate)):''}</td></tr>`;});
   return h+'</table>';
 }
 function renderExportPreviewInto(rowId,type,wrapEl){
@@ -1720,8 +1725,8 @@ function exportCiaCSV(rowId,type){
   }
   if(type==='tasks'||type==='all'){
     lines.push(csvRow(['Tarefas']));
-    lines.push(csvRow(['Título','Categoria','Prioridade','Status','Prazo','Solicitado por','Responsável','Descrição']));
-    (r.tasks||[]).forEach(t=>lines.push(csvRow([t.title,t.category,TASK_PRIORITY_LABEL[t.priority]||t.priority,TASK_STATUS_LABEL[t.status]||t.status,t.dueDate?formatDateDisplay(t.dueDate):'',t.requestedBy,t.responsavel,t.description])));
+    lines.push(csvRow(['Título','E-mail','Categoria','Prioridade','Status','Prazo','Solicitado por','Responsável','Descrição']));
+    (r.tasks||[]).forEach(t=>lines.push(csvRow([t.title,t.email,t.category,TASK_PRIORITY_LABEL[t.priority]||t.priority,TASK_STATUS_LABEL[t.status]||t.status,t.dueDate?formatDateDisplay(t.dueDate):'',t.requestedBy,t.responsavel,t.description])));
   }
   const csv=lines.join('\n');
   const b=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
