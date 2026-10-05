@@ -1275,6 +1275,22 @@ const TASK_ASSIGNEES={
   'Marcos Teixeira':'marcos.teixeira@decolar.com',
   'Natanael Correa':'natanael.correa@decolar.com'
 };
+const TASK_ASSIGNEE_SLACK_ID={
+  'Carolina Movio':'U0ANP1KMUQL',
+  'Cyntia Coldibeli':'U0AR147TJ4W',
+  'Derik Gomes':'U090ZRYBW49',
+  'Gabrielli Pimentel':'U0BM6RR2NKH',
+  'Giselle Pina':'U09NRTEAW1H',
+  'Jessica Silva':'U090ZRJ9UEM',
+  'Juliane Castiglione':'U09298LBWRF',
+  'Lucas Perrotti':'U090ZRQ2UF3',
+  'Marcos Teixeira':'U090NHLGWKW',
+  'Natanael Correa':'U091B8ZMKQQ'
+};
+function slackMentionFor(assigneeName){
+  const id=TASK_ASSIGNEE_SLACK_ID[assigneeName];
+  return id?`<@${id}>`:`*${assigneeName}*`;
+}
 function taskAssigneeOptionsHTML(current){
   let h='<option value="">Sem responsável</option>';
   Object.keys(TASK_ASSIGNEES).forEach(name=>{
@@ -1307,13 +1323,15 @@ function sendSlackMessage(text){
   }).catch(()=>{});
 }
 function notifyTaskAssignTransfer(row,task,assigneeName){
-  const msg=`🔔 *${assigneeName}*, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
+  const mention=slackMentionFor(assigneeName);
+  const msg=`🔔 ${mention}, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
   sendSlackMessage(msg);
 }
 function notifyTaskDueSoon(row,task,assigneeName){
   const ds=taskDueState(task);
+  const mention=slackMentionFor(assigneeName);
   const label=ds==='atrasada'?'está *atrasada*':'vence *hoje*';
-  const msg=`⏰ *${assigneeName}*, a tarefa "${task.title||'(sem título)'}" (${row.name}) ${label} (${taskFmtDate(task.dueDate)}).`;
+  const msg=`⏰ ${mention}, a tarefa "${task.title||'(sem título)'}" (${row.name}) ${label} (${taskFmtDate(task.dueDate)}).`;
   sendSlackMessage(msg);
 }
 function checkDueTasksAndNotify(){
