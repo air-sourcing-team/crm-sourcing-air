@@ -441,7 +441,7 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 
     <div id="okrPage">
       <div class="strategic-frame-wrap-full">
-        <iframe src="https://script.google.com/a/macros/decolar.com/s/AKfycbxlu8VRGYeHMXHWk43v5QexSueOCGImtZp4fFno6P4glNj4Pnw0QDwURWASubmJ0jh2cw/exec?pantalla=1" class="strategic-iframe" title="Home"></iframe>
+        <iframe src="https://ownia.despegar.io/strategic-map" class="strategic-iframe" title="Home"></iframe>
       </div>
     </div>
 
@@ -1322,9 +1322,10 @@ function sendSlackMessage(text){
     body:'payload='+encodeURIComponent(JSON.stringify({text}))
   }).catch(()=>{});
 }
-function notifyTaskAssignTransfer(row,task,assigneeName){
+function notifyTaskAssignTransfer(row,task,assigneeName,ccName){
   const mention=slackMentionFor(assigneeName);
-  const msg=`🔔 ${mention}, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
+  const ccPart=ccName?` (cc ${slackMentionFor(ccName)})`:'';
+  const msg=`🔔 ${mention}${ccPart}, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
   sendSlackMessage(msg);
 }
 function notifyTaskDueSoon(row,task,assigneeName){
@@ -1377,7 +1378,7 @@ function migrateTasks(r){
       id:t.id||taskUid(),title:t.title||'',email:t.email||'',description:t.description||'',
       priority:t.priority||'media',category:cat,dueDate:t.dueDate||'',
       tags:Array.isArray(t.tags)?t.tags:[],requestedBy:t.requestedBy||'',
-      responsavel:t.responsavel||'',
+      responsavel:t.responsavel||'',cc:t.cc||'',
       recurrence:t.recurrence||{type:'none'},status:t.status||'nao_iniciada',
       followUps:Array.isArray(t.followUps)?t.followUps:[],
       createdAt:t.createdAt||new Date().toISOString(),completedAt:t.completedAt||null,
@@ -1432,7 +1433,7 @@ function taskCardHTML(t){
       <select class="task-assignee-select" data-action="task-assignee-change">${taskAssigneeOptionsHTML(t.responsavel)}</select>
       <input type="date" class="task-transfer-date" min="2020-01-01" max="2035-12-31" data-action="task-transfer-date" value="${esc(t.dueDate||'')}">
     </div>
-    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}${t.email?' · E-mail: <b>'+esc(t.email)+'</b>':''}</div>
+    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}${t.email?' · E-mail: <b>'+esc(t.email)+'</b>':''}${t.cc?' · CC: <b>'+esc(t.cc)+'</b>':''}</div>
     <div class="task-links-row">
       ${t.description?`<span class="task-text-btn" data-action="task-view-desc">${TASK_ICON.eye} Ver descrição</span>`:''}
     </div>
@@ -1502,26 +1503,27 @@ function saveTaskForm(rowId){
   const dueDate=document.getElementById('taskFldDue').value||'';
   const requestedBy=document.getElementById('taskFldRequestedBy').value.trim();
   const responsavel=document.getElementById('taskFldResponsavel')?document.getElementById('taskFldResponsavel').value:'';
+  const cc=document.getElementById('taskFldCC')?document.getElementById('taskFldCC').value:'';
   const status=document.getElementById('taskFldStatus').value;
   if(taskEditingId){
     const t=(r.tasks||[]).find(x=>x.id===taskEditingId);if(!t)return;
     const prevResp=t.responsavel||'';
     t.title=title;t.email=email;t.description=description;t.priority=priority;t.category=category;
-    t.dueDate=dueDate;t.requestedBy=requestedBy;t.responsavel=responsavel;
+    t.dueDate=dueDate;t.requestedBy=requestedBy;t.responsavel=responsavel;t.cc=cc;
     const wasCompleting=status==='concluida'&&t.status!=='concluida';
     t.status=status;
     if(wasCompleting)t.completedAt=new Date().toISOString();
     else if(status!=='concluida')t.completedAt=null;
     persist();closeTaskModal();render();
-    if(responsavel&&responsavel!==prevResp)notifyTaskAssignTransfer(r,t,responsavel);
+    if(responsavel&&responsavel!==prevResp)notifyTaskAssignTransfer(r,t,responsavel,cc);
   }else{
     if(!Array.isArray(r.tasks))r.tasks=[];
-    const newTask={id:taskUid(),title,email,description,priority,category,dueDate,requestedBy,tags:[],responsavel,recurrence:{type:'none'},status,followUps:[],createdAt:new Date().toISOString(),completedAt:status==='concluida'?new Date().toISOString():null};
+    const newTask={id:taskUid(),title,email,description,priority,category,dueDate,requestedBy,tags:[],responsavel,cc,recurrence:{type:'none'},status,followUps:[],createdAt:new Date().toISOString(),completedAt:status==='concluida'?new Date().toISOString():null};
     r.tasks.push(newTask);
     persist();closeTaskModal();render();
     const creator=normStrLoose(requestedBy);
     const assignee=normStrLoose(responsavel);
-    if(responsavel&&assignee!==creator)notifyTaskAssignTransfer(r,newTask,responsavel);
+    if(responsavel&&assignee!==creator)notifyTaskAssignTransfer(r,newTask,responsavel,cc);
   }
 }
 function normStrLoose(s){return (s||'').trim().toLowerCase();}
@@ -1550,7 +1552,10 @@ function openTaskModal(rowId,id){
         <div class="task-form-row"><label>Prazo / vencimento (opcional)</label><input type="date" id="taskFldDue" min="2020-01-01" max="2035-12-31" value="${t&&t.dueDate?t.dueDate:''}"></div>
         <div class="task-form-row"><label>Solicitado por</label><input type="text" id="taskFldRequestedBy" value="${t?esc(t.requestedBy||''):''}" placeholder="Nome do solicitante"></div>
       </div>
-      <div class="task-form-row"><label>Responsável</label><select id="taskFldResponsavel">${taskAssigneeOptionsHTML(t?t.responsavel:'')}</select></div>
+      <div class="task-form-grid">
+        <div class="task-form-row"><label>Responsável</label><select id="taskFldResponsavel">${taskAssigneeOptionsHTML(t?t.responsavel:'')}</select></div>
+        <div class="task-form-row"><label>CC (opcional)</label><select id="taskFldCC">${taskAssigneeOptionsHTML(t?t.cc:'')}</select></div>
+      </div>
       <div class="task-form-row"><label>Status<span class="required-star">*</span></label><select id="taskFldStatus" required>
         <option value="nao_iniciada" ${!t||t.status==='nao_iniciada'?'selected':''}>Não Iniciada</option>
         <option value="em_andamento" ${t&&t.status==='em_andamento'?'selected':''}>Em Andamento</option>
@@ -1633,7 +1638,7 @@ function wireTasksEvents(r){
         const next=e.target.value;
         t.responsavel=next;
         persist();render();
-        if(next&&next!==prev)notifyTaskAssignTransfer(r,t,next);
+        if(next&&next!==prev)notifyTaskAssignTransfer(r,t,next,t.cc);
         return;
       }
       if(e.target.matches('[data-action="task-transfer-date"]')){
