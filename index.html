@@ -1328,10 +1328,17 @@ function notifyTaskAssignTransfer(row,task,assigneeName,ccName){
   const msg=`🔔 ${mention}${ccPart}, você recebeu uma tarefa: "${task.title||'(sem título)'}" — ${row.name}${task.dueDate?' · prazo '+taskFmtDate(task.dueDate):''}`;
   sendSlackMessage(msg);
 }
-function notifyTaskDueSoon(row,task,assigneeName){
-  const ds=taskDueState(task);
+function daysUntilDue(dueDateStr){
+  const d=new Date(dueDateStr+'T00:00:00');
+  const today=new Date();today.setHours(0,0,0,0);
+  return Math.round((d-today)/86400000);
+}
+function notifyTaskDueSoon(row,task,assigneeName,diff){
   const mention=slackMentionFor(assigneeName);
-  const label=ds==='atrasada'?'está *atrasada*':'vence *hoje*';
+  let label;
+  if(diff<0)label=`está *atrasada* (${Math.abs(diff)} dia${Math.abs(diff)===1?'':'s'})`;
+  else if(diff===0)label='vence *hoje*';
+  else label=`vence em *${diff} dia${diff===1?'':'s'}*`;
   const msg=`⏰ ${mention}, a tarefa "${task.title||'(sem título)'}" (${row.name}) ${label} (${taskFmtDate(task.dueDate)}).`;
   sendSlackMessage(msg);
 }
@@ -1341,10 +1348,10 @@ function checkDueTasksAndNotify(){
   state.rows.forEach(row=>{
     (row.tasks||[]).forEach(t=>{
       if(t.status==='concluida'||!t.dueDate||!t.responsavel)return;
-      const ds=taskDueState(t);
-      if(ds!=='hoje'&&ds!=='atrasada')return;
+      const diff=daysUntilDue(t.dueDate);
+      if(diff>7)return;
       if(t.lastDueAlertDate===today)return;
-      notifyTaskDueSoon(row,t,t.responsavel);
+      notifyTaskDueSoon(row,t,t.responsavel,diff);
       t.lastDueAlertDate=today;
       changed=true;
     });
@@ -1523,7 +1530,7 @@ function saveTaskForm(rowId){
     persist();closeTaskModal();render();
     const creator=normStrLoose(requestedBy);
     const assignee=normStrLoose(responsavel);
-    if(responsavel&&assignee!==creator)notifyTaskAssignTransfer(r,newTask,responsavel,cc);
+    if(responsavel&&creator&&assignee!==creator)notifyTaskAssignTransfer(r,newTask,responsavel,cc);
   }
 }
 function normStrLoose(s){return (s||'').trim().toLowerCase();}
