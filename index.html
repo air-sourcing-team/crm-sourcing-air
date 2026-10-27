@@ -20,6 +20,14 @@ a{color:inherit;text-decoration:none}
 
 /* LAYOUT */
 .app{display:flex;height:100vh;overflow:hidden}
+.auth-gate{position:fixed;inset:0;background:#faf7f2;display:flex;align-items:center;justify-content:center;z-index:9999}
+.auth-card{background:#fff;border:1px solid #ece6db;border-radius:16px;padding:40px 44px;max-width:380px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.auth-logo{width:52px;height:52px;margin-bottom:16px}
+.auth-card h1{font-size:19px;font-weight:800;color:#2b2a28;margin-bottom:6px}
+.auth-sub{font-size:12.5px;color:#8a8378;line-height:1.5;margin-bottom:22px}
+.auth-google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:1px solid #e6e9ef;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:600;color:#323338;background:#fff;cursor:pointer}
+.auth-google-btn:hover{background:#f7f7fa}
+.auth-error{color:#c0432a;font-size:12.5px;margin-top:14px;line-height:1.5}
 .sidebar{width:240px;flex:0 0 240px;background:#fff;border-right:1px solid #e6e9ef;display:flex;flex-direction:column;padding:16px 0}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
 
@@ -486,7 +494,20 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 </style>
 </head>
 <body>
-<div class="app">
+<div id="authGate" class="auth-gate">
+  <div class="auth-card">
+    <img class="auth-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFHklEQVR4nKWXTYidVxnHf/9z3o87dybR1EqT1tok1lhp4qCTRRMEG7Fqg6ToYhYulC6ELhTciMt7B4SCG3HhSrBgXcgd3RSNJVV0U6hYQzENobE0prS0w4wNJu19v+45j4v3NpPM553JA+cu3vue5/k9n+85cFNMPcwxXj3MWc+c2fZrMDA/GJjv9cxxx6I72z6GmlhLAiaQfeeB5VMuZqfu+oQNH/y8cw+dyDjwKUccwQc3IkRwye2bYwSD0ktLeL1eNMPLkq6NQdTv97WwsBC3BOiBFsBCpa+p3vvjdy8X/O/thCsvi0OzCUe/BAcOQwgQRqA1vpnBKEBd1x9Muc7r/zxbnTPjWUkXAOv1zC0saFOImz4JVzSxHlVxGIv/4peX4NJ5ePE5MfuVlJPfTJnZ52hKQ+szLe/9dJoksxKzRVl97x/PV79UXf30+BmtWM+cNoFYVWXmgMQJn6byna58d498NcS/uNj43/6k9G//O/hsSt6iPNy2XAjBqroORVlG75OPdjvZj0jzP730h3pOC4qDgfmtAdaE1WK7nIfONLx1KfK7p0uuXgykU+1/t4VAEuAl50IYWVHUo6lOdjxP9fvzzw9Pzs8rmK3vkm3bxqwttnwari0Zz/28YvlqJO2sh1gDkxRFNUrS5IFo7tlX/lgekRTXdsjEfRsDZF1YfjPw52cq6rIN/pYiJWVZhu5UfrjGfvbXZ650WqdWIXY0OCxA3hWXXw68+reGLNemUVhlkCuKJuRZ9vj0gf3flmT02R1AqxGIcP5cw/vXDJ+0adoKIRIl5+SCvv/S2ZW9t3bEjgEsQpLDu29E3nx1RJIBWwKAkKvr2lziZxOb+TLAYDDwuwIAkIO6Mq5cCG0KJhi8ZtHyLHHmeAxgcbF9nmy1aXNt4L1Y+k+kKpggDSDJMBD63OWzlh85rcrMNphpE4oc3HjPKN8fT8ZtAMxQaN85sBKGdwPQ32ioTiBG+01oSqOuDGlb+0gQo4HRVe67Y4Dd1cCq1l18vR245k7asLWLGaSZSHNhtj2IGTgJixRWhiFwZxGIEWbuEvm0JuoECXMeJN4prndXxgC7PEIJLBj3HHLk3RZmOzEzySDKLpx6UmWvZ07S7gAsQpKJg8c8zk1QgQByqurGUnEO4OGH25jtGEAORhXsP+w4eDRhVG9fAIbFPM0ULPyrCvlfAObn23G88wgYIPjCV1Nm9mnDY9qaDSZkRkTiF4+c1nVrT8+2YwB5qArjwTnPsUdTmmrD49ka88TuVOarqjlXX1/+jZmJ/mrSJgZwHpoCPnaf57Enc7Kp9oywjflRJ8/9sKiveuOHJ+c/WcB4LE8KIIFzUA1h793izA9y7jnkaEo29d7MbGw8GYXRW7EJ3537RufSh5V/67sbfowkbhZWDFCXcP9nHI8/lXP/Z317GlpjvDWKSZh33nc6STIsmlea0Dx14sz03wcD8/PzWhezVQApgoVoBAvGqGn7e89HYO7rKV/8Vsaej4u6WJ93AznnXZYmkoOyrG8Uw/JXTTN6+sQTe5asZ04bGL8NwIhTqcu9fPT5VMK+/Y5DxzxHH4X7Pt3ChAbymbWet5eWqqrKsoxvIF6Q+PXc6anzAL0t7gQAycK4HZLMv+Cy6+y/NwwPzqbuoUcS7j0SiBHeu7bx1QwgmpUyLaWJvxyq9LXjZ7TyoWGArW5FG8st+d+NmJnbyS35Fp9MPdDCuEZ7459+H+hvoaEPi4st8sWLmLQzj/8PwySBqf9rc9wAAAAASUVORK5CYII=" alt="Decolar">
+    <h1>CRM - Sourcing Air BR</h1>
+    <p class="auth-sub">Acesso restrito a contas <b>@decolar.com</b> ou <b>@despegar.com</b></p>
+    <button id="authGoogleBtn" class="auth-google-btn">
+      <svg viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6.1 29.6 4 24 4c-7.6 0-14.1 4.3-17.4 10.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.9 14.2-5.1l-6.6-5.4c-2 1.5-4.6 2.5-7.6 2.5-5.2 0-9.6-3.3-11.3-7.9l-6.6 5.1C9.9 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.5l6.6 5.4C41.5 36 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+      Entrar com Google
+    </button>
+    <p id="authError" class="auth-error" style="display:none"></p>
+    <p id="authLoading" class="auth-sub" style="display:none">Entrando...</p>
+  </div>
+</div>
+<div class="app" id="mainApp" style="display:none">
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAFHklEQVR4nKWXTYidVxnHf/9z3o87dybR1EqT1tok1lhp4qCTRRMEG7Fqg6ToYhYulC6ELhTciMt7B4SCG3HhSrBgXcgd3RSNJVV0U6hYQzENobE0prS0w4wNJu19v+45j4v3NpPM553JA+cu3vue5/k9n+85cFNMPcwxXj3MWc+c2fZrMDA/GJjv9cxxx6I72z6GmlhLAiaQfeeB5VMuZqfu+oQNH/y8cw+dyDjwKUccwQc3IkRwye2bYwSD0ktLeL1eNMPLkq6NQdTv97WwsBC3BOiBFsBCpa+p3vvjdy8X/O/thCsvi0OzCUe/BAcOQwgQRqA1vpnBKEBd1x9Muc7r/zxbnTPjWUkXAOv1zC0saFOImz4JVzSxHlVxGIv/4peX4NJ5ePE5MfuVlJPfTJnZ52hKQ+szLe/9dJoksxKzRVl97x/PV79UXf30+BmtWM+cNoFYVWXmgMQJn6byna58d498NcS/uNj43/6k9G//O/hsSt6iPNy2XAjBqroORVlG75OPdjvZj0jzP730h3pOC4qDgfmtAdaE1WK7nIfONLx1KfK7p0uuXgykU+1/t4VAEuAl50IYWVHUo6lOdjxP9fvzzw9Pzs8rmK3vkm3bxqwttnwari0Zz/28YvlqJO2sh1gDkxRFNUrS5IFo7tlX/lgekRTXdsjEfRsDZF1YfjPw52cq6rIN/pYiJWVZhu5UfrjGfvbXZ650WqdWIXY0OCxA3hWXXw68+reGLNemUVhlkCuKJuRZ9vj0gf3flmT02R1AqxGIcP5cw/vXDJ+0adoKIRIl5+SCvv/S2ZW9t3bEjgEsQpLDu29E3nx1RJIBWwKAkKvr2lziZxOb+TLAYDDwuwIAkIO6Mq5cCG0KJhi8ZtHyLHHmeAxgcbF9nmy1aXNt4L1Y+k+kKpggDSDJMBD63OWzlh85rcrMNphpE4oc3HjPKN8fT8ZtAMxQaN85sBKGdwPQ32ioTiBG+01oSqOuDGlb+0gQo4HRVe67Y4Dd1cCq1l18vR245k7asLWLGaSZSHNhtj2IGTgJixRWhiFwZxGIEWbuEvm0JuoECXMeJN4prndXxgC7PEIJLBj3HHLk3RZmOzEzySDKLpx6UmWvZ07S7gAsQpKJg8c8zk1QgQByqurGUnEO4OGH25jtGEAORhXsP+w4eDRhVG9fAIbFPM0ULPyrCvlfAObn23G88wgYIPjCV1Nm9mnDY9qaDSZkRkTiF4+c1nVrT8+2YwB5qArjwTnPsUdTmmrD49ka88TuVOarqjlXX1/+jZmJ/mrSJgZwHpoCPnaf57Enc7Kp9oywjflRJ8/9sKiveuOHJ+c/WcB4LE8KIIFzUA1h793izA9y7jnkaEo29d7MbGw8GYXRW7EJ3537RufSh5V/67sbfowkbhZWDFCXcP9nHI8/lXP/Z317GlpjvDWKSZh33nc6STIsmlea0Dx14sz03wcD8/PzWhezVQApgoVoBAvGqGn7e89HYO7rKV/8Vsaej4u6WJ93AznnXZYmkoOyrG8Uw/JXTTN6+sQTe5asZ04bGL8NwIhTqcu9fPT5VMK+/Y5DxzxHH4X7Pt3ChAbymbWet5eWqqrKsoxvIF6Q+PXc6anzAL0t7gQAycK4HZLMv+Cy6+y/NwwPzqbuoUcS7j0SiBHeu7bx1QwgmpUyLaWJvxyq9LXjZ7TyoWGArW5FG8st+d+NmJnbyS35Fp9MPdDCuEZ7459+H+hvoaEPi4st8sWLmLQzj/8PwySBqf9rc9wAAAAASUVORK5CYII=" alt="Decolar">
@@ -515,7 +536,7 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
       <div class="nav-item" id="navExportar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Exportar</div>
       <div class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>Integrar</div>
     </nav>
-    <div class="sidebar-bottom">v1.0 · ToqanClaw</div>
+    <div class="sidebar-bottom">v1.0 · ToqanClaw · <span id="signOutBtn" style="cursor:pointer;text-decoration:underline">Sair</span></div>
   </aside>
 
   <div class="main">
@@ -687,6 +708,7 @@ table.crm tbody tr:hover .delete-btn{opacity:1}
 <div id="toast" class="toast"></div>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script>
   const firebaseConfig = {
     apiKey: "AIzaSyCp1C35moF7u7wUL93VnjcORpvvB3qCG9U",
@@ -905,6 +927,12 @@ async function ensureTasksImported(){
   try{await window.storage.set(TASKS_IMPORT_KEY,'true',false);}catch(e){}
   return true;
 }
+const GERAL_ROW_ID='geral_tasks';
+function ensureGeralRow(){
+  if(state.rows.some(r=>r.id===GERAL_ROW_ID))return false;
+  state.rows.unshift({id:GERAL_ROW_ID,name:'Geral',iata:'',responsavel:'',kam_home:'',contato:'',cargo:'',email:'',telefone:'',contrato:'',contrato_drive:'',condicao_comercial:'',polcom_vigentes:'',plano_media:'',pm_moeda:'USD',pm_valor:'',pm_inicio:'',pm_fim:'',pm_produtos:[],pm_obs:'',cc_inicio:'',cc_fim:'',cc_drive_link:'',cc_obs:'',toqan_app_link:'',info_gerais:[],pos:'',kam_local:'',email_kam_local:'',pos_kam_local:'',observacoes:'',participacao:'',starred:false,contacts:[],tasks:[],categories:[]});
+  return true;
+}
 async function load(){
   try{
     const r=await window.storage.get(STORAGE_KEY,false);
@@ -922,6 +950,7 @@ async function load(){
   if(kamDetailsSynced)persist();
   const tasksSynced=await ensureTasksImported();
   if(tasksSynced)persist();
+  if(ensureGeralRow())persist();
   await loadSlackWebhookUrl();
   checkDueTasksAndNotify();
 }
@@ -967,20 +996,34 @@ function renderCondicaoComercialBlock(r){
   const fim=r.cc_fim||'';
   const rid=esc(r.id);
   let h=`<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">Condição Comercial</span></div><div class="exp-block-body pm-body">`;
-  h+=`<div class="pm-group">
-    <label class="pm-label-sentence">Período</label>
-    <div class="pm-period-combo">
-      <input type="date" class="pm-input" min="2020-01-01" max="2035-12-31" value="${esc(inicio)}" data-id="${rid}" data-pmfield="cc_inicio">
-      <span class="pm-period-sep">até</span>
-      <div class="pm-period-fim-wrap">
-        <input type="date" class="pm-input" min="2020-01-01" max="2035-12-31" value="${esc(fim)}" data-id="${rid}" data-pmfield="cc_fim">
-        ${pmPeriodCountdownHTML(fim)}
+  const ccCondicaoVigente=r.cc_condicao_vigente||'';
+  h+=`<div class="pm-row pm-row-compact">
+    <div class="pm-group">
+      <label class="pm-label-sentence">Período</label>
+      <div class="pm-period-combo">
+        <input type="date" class="pm-input" min="2020-01-01" max="2035-12-31" value="${esc(inicio)}" data-id="${rid}" data-pmfield="cc_inicio">
+        <span class="pm-period-sep">até</span>
+        <div class="pm-period-fim-wrap">
+          <input type="date" class="pm-input" min="2020-01-01" max="2035-12-31" value="${esc(fim)}" data-id="${rid}" data-pmfield="cc_fim">
+          ${pmPeriodCountdownHTML(fim)}
+        </div>
       </div>
+    </div>
+    <div class="pm-group">
+      <label class="pm-label-sentence">Condição vigente</label>
+      <div class="exp-value editable editable-multiline ${ccCondicaoVigente?'':'empty'}" contenteditable="true" spellcheck="false" data-id="${rid}" data-field="cc_condicao_vigente" style="min-height:40px;white-space:pre-wrap">${ccCondicaoVigente?esc(ccCondicaoVigente):'<span class="cell-empty">Escrever condição vigente...</span>'}</div>
     </div>
   </div>`;
   h+=`<div class="pm-group"><label class="pm-label-sentence">Link Drive</label>${driveLinkFieldHTML(r,'cc_drive_link','Abrir link','Colar link do Drive...')}</div>`;
+  const ccObs=r.cc_obs||'';
+  h+=`<div class="pm-group"><label class="pm-label-sentence">Observações</label><div class="exp-value editable editable-multiline ${ccObs?'':'empty'}" contenteditable="true" spellcheck="false" data-id="${rid}" data-field="cc_obs" style="min-height:40px;white-space:pre-wrap">${ccObs?esc(ccObs):'<span class="cell-empty">Escrever...</span>'}</div></div>`;
   h+='</div></div>';
   return h;
+}
+const APP_TOQAN_AIRLINES=['Gol','LATAM','Azul','TAP','Air Canada'];
+function renderAppToqanBlock(r){
+  if(!APP_TOQAN_AIRLINES.includes(r.name))return '';
+  return `<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">App Toqan</span></div><div class="exp-block-body">${driveLinkFieldHTML(r,'toqan_app_link','Abrir app','Colar link do app Toqan...')}</div></div>`;
 }
 function pmPeriodCountdownHTML(fim){
   if(!fim)return '';
@@ -1062,7 +1105,7 @@ function migrateContacts(r){
   }
   return r;
 }
-function norm(){state.rows=state.rows.map((r,i)=>migrateTasks(migrateInfoGerais(migrateContacts(fixRetiredKam({id:r.id||"a"+Date.now()+i,name:r.name||'',iata:r.iata||'',responsavel:r.responsavel||'',kam_home:r.kam_home||'',contato:r.contato||'',cargo:r.cargo||'',email:r.email||'',email_contato:r.email_contato||'',telefone:r.telefone||'',contrato:r.contrato||'',contrato_drive:r.contrato_drive||'',pos:r.pos||'',kam_local:r.kam_local||'',email_kam_local:r.email_kam_local||'',pos_kam_local:r.pos_kam_local||'',condicao_comercial:r.condicao_comercial||'',polcom_vigentes:r.polcom_vigentes||'',plano_media:r.plano_media||'',pm_moeda:r.pm_moeda||'USD',pm_valor:r.pm_valor||'',pm_inicio:r.pm_inicio||'',pm_fim:r.pm_fim||'',pm_produtos:Array.isArray(r.pm_produtos)?r.pm_produtos:[],pm_obs:r.pm_obs||'',cc_inicio:r.cc_inicio||'',cc_fim:r.cc_fim||'',cc_drive_link:r.cc_drive_link||'',info_geral:r.info_geral||'',info_geral_data:r.info_geral_data||'',info_gerais:r.info_gerais,observacoes:r.observacoes||'',participacao:r.participacao||'',starred:!!r.starred,contacts:r.contacts,tasks:r.tasks,categories:Array.isArray(r.categories)?r.categories.map(c=>typeof c==='string'?{name:c,note:'',date:''}:{name:c.name,note:c.note||'',date:c.date||''}).filter(c=>CATEGORIES.includes(c.name)):[]})))));}
+function norm(){state.rows=state.rows.map((r,i)=>migrateTasks(migrateInfoGerais(migrateContacts(fixRetiredKam({id:r.id||"a"+Date.now()+i,name:r.name||'',iata:r.iata||'',responsavel:r.responsavel||'',kam_home:r.kam_home||'',contato:r.contato||'',cargo:r.cargo||'',email:r.email||'',email_contato:r.email_contato||'',telefone:r.telefone||'',contrato:r.contrato||'',contrato_drive:r.contrato_drive||'',pos:r.pos||'',kam_local:r.kam_local||'',email_kam_local:r.email_kam_local||'',pos_kam_local:r.pos_kam_local||'',condicao_comercial:r.condicao_comercial||'',polcom_vigentes:r.polcom_vigentes||'',plano_media:r.plano_media||'',pm_moeda:r.pm_moeda||'USD',pm_valor:r.pm_valor||'',pm_inicio:r.pm_inicio||'',pm_fim:r.pm_fim||'',pm_produtos:Array.isArray(r.pm_produtos)?r.pm_produtos:[],pm_obs:r.pm_obs||'',cc_inicio:r.cc_inicio||'',cc_fim:r.cc_fim||'',cc_drive_link:r.cc_drive_link||'',cc_obs:r.cc_obs||'',cc_condicao_vigente:r.cc_condicao_vigente||'',toqan_app_link:r.toqan_app_link||'',info_geral:r.info_geral||'',info_geral_data:r.info_geral_data||'',info_gerais:r.info_gerais,observacoes:r.observacoes||'',participacao:r.participacao||'',starred:!!r.starred,contacts:r.contacts,tasks:r.tasks,categories:Array.isArray(r.categories)?r.categories.map(c=>typeof c==='string'?{name:c,note:'',date:''}:{name:c.name,note:c.note||'',date:c.date||''}).filter(c=>CATEGORIES.includes(c.name)):[]})))));}
 
 const KAM_PALETTE=['#f5a623','#7c5cff','#00b8a9','#e2445c','#0086c0','#00c875','#ff7a45','#9b59b6'];
 const TEAM=[
@@ -1212,7 +1255,7 @@ function renderBIPerformancePage(personKey){
     return aDue<bDue?-1:aDue>bDue?1:0;
   }).slice(0,3);
 
-  let h=`<div class="bi-header"><div class="bi-title">BI &amp; Performance — ${esc(person.displayName)}</div><span class="task-add-btn bi-new-task-btn" id="biNewTaskBtn" data-person="${esc(personKey)}">+ Nova tarefa</span></div>`;
+  let h=`<div class="bi-header"><div class="bi-title">BI &amp; Performance — ${esc(person.displayName)}</div></div>`;
 
   h+='<div class="bi-kpi-grid">';
   h+=`<div class="bi-kpi-card"><div class="bi-kpi-icon cream">📋</div><div><div class="bi-kpi-num">${total}</div><div class="bi-kpi-label">Total</div></div></div>`;
@@ -1240,6 +1283,7 @@ function renderBIPerformancePage(personKey){
   h+=`<div class="bi-filter-field"><label>Prioridade</label><select id="biFPriority"><option value="todas">Todas</option><option value="alta"${biFilters.priority==='alta'?' selected':''}>Alta</option><option value="media"${biFilters.priority==='media'?' selected':''}>Média</option><option value="baixa"${biFilters.priority==='baixa'?' selected':''}>Baixa</option></select></div>`;
   h+=`<div class="bi-filter-field"><label>Buscar</label><input type="text" id="biFSearch" placeholder="Título ou descrição..." value="${esc(biFilters.search)}"></div>`;
   h+=`<button class="bi-filter-clear" id="biFClear">Limpar Filtros</button>`;
+  h+=`<span class="task-add-btn bi-new-task-btn" id="biNewTaskBtn" data-person="${esc(personKey)}" style="margin-left:auto">+ Nova tarefa</span>`;
   h+='</div>';
 
   const filtered=all.filter(x=>biTaskMatchesFilters(x.task));
@@ -1485,6 +1529,7 @@ function renderDetail(){
   h+=`</div></div>`;
   h+=renderPlanoMidiaBlock(r);
   h+=renderCondicaoComercialBlock(r);
+  h+=renderAppToqanBlock(r);
   BLOCKS.forEach(([f,l])=>{
     const v=r[f]||'';
     h+=`<div class="exp-block"><div class="exp-block-head"><span class="exp-block-title">${l}</span></div><div class="exp-block-body"><div class="exp-value editable editable-multiline ${v?'':'empty'}" contenteditable="true" spellcheck="false" data-id="${esc(r.id)}" data-field="${f}" style="min-height:32px;white-space:pre-wrap">${v?esc(v):'<span class="cell-empty">Preencher...</span>'}</div></div></div>`;
@@ -1751,7 +1796,7 @@ function taskCardHTML(t){
       <select class="task-assignee-select" data-action="task-assignee-change">${taskAssigneeOptionsHTML(t.responsavel)}</select>
       <input type="date" class="task-transfer-date" min="2020-01-01" max="2035-12-31" data-action="task-transfer-date" value="${esc(t.dueDate||'')}">
     </div>
-    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}${t.email?' · E-mail: <b>'+esc(t.email)+'</b>':''}${t.cc?' · CC: <b>'+esc(t.cc)+'</b>':''}${t.createdAt?' · Criada em: <b>'+taskFmtDate(t.createdAt.slice(0,10))+'</b>':''}</div>
+    <div class="task-meta">Prioridade: <b>${TASK_PRIORITY_LABEL[t.priority]}</b>${t.requestedBy?' · Solicitado por: <b>'+esc(t.requestedBy)+'</b>':''}${t.cc?' · CC: <b>'+esc(t.cc)+'</b>':''}${t.createdAt?' · Criada em: <b>'+taskFmtDate(t.createdAt.slice(0,10))+'</b>':''}</div>
     <div class="task-links-row">
       ${t.description?`<span class="task-text-btn" data-action="task-view-desc">${TASK_ICON.eye} Ver descrição</span>`:''}
     </div>
@@ -1817,7 +1862,6 @@ function saveTaskForm(rowId){
   const r=state.rows.find(x=>x.id===rowId);if(!r)return;
   const title=document.getElementById('taskFldTitle').value.trim();
   if(!title){flash('Informe um título para a tarefa');return;}
-  const email=document.getElementById('taskFldEmail').value.trim();
   const description=document.getElementById('taskFldDesc').value.trim();
   const priority=document.getElementById('taskFldPriority').value;
   const category=document.getElementById('taskFldCategory').value;
@@ -1829,7 +1873,7 @@ function saveTaskForm(rowId){
   if(taskEditingId){
     const t=(r.tasks||[]).find(x=>x.id===taskEditingId);if(!t)return;
     const prevResp=t.responsavel||'';
-    t.title=title;t.email=email;t.description=description;t.priority=priority;t.category=category;
+    t.title=title;t.description=description;t.priority=priority;t.category=category;
     t.dueDate=dueDate;t.requestedBy=requestedBy;t.responsavel=responsavel;t.cc=cc;
     const wasCompleting=status==='concluida'&&t.status!=='concluida';
     t.status=status;
@@ -1839,7 +1883,7 @@ function saveTaskForm(rowId){
     if(responsavel&&responsavel!==prevResp)notifyTaskAssignTransfer(r,t,responsavel,cc);
   }else{
     if(!Array.isArray(r.tasks))r.tasks=[];
-    const newTask={id:taskUid(),title,email,description,priority,category,dueDate,requestedBy,tags:[],responsavel,cc,recurrence:{type:'none'},status,followUps:[],createdAt:new Date().toISOString(),completedAt:status==='concluida'?new Date().toISOString():null};
+    const newTask={id:taskUid(),title,email:'',description,priority,category,dueDate,requestedBy,tags:[],responsavel,cc,recurrence:{type:'none'},status,followUps:[],createdAt:new Date().toISOString(),completedAt:status==='concluida'?new Date().toISOString():null};
     r.tasks.push(newTask);
     persist();closeTaskModal();render();
     const creator=normStrLoose(requestedBy);
@@ -1860,9 +1904,8 @@ function openTaskModal(rowId,id,defaultResponsavel){
   wrap.innerHTML=`<div class="task-overlay" data-action="task-overlay-close"><div class="task-modal" data-stop>
     <div class="task-modal-header"><h3>${t?'Editar tarefa':'Nova tarefa'}</h3><span class="task-close-x" data-action="task-close-modal">${TASK_ICON.close}</span></div>
     <div class="task-modal-body">
-      ${needsCiaPicker?`<div class="task-form-row"><label>Cia aérea<span class="required-star">*</span></label><select id="taskFldCia" required>${state.rows.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(row=>`<option value="${esc(row.id)}">${esc(row.name)}</option>`).join('')}</select></div>`:''}
+      ${needsCiaPicker?`<div class="task-form-row"><label>Cia aérea<span class="required-star">*</span></label><select id="taskFldCia" required>${state.rows.slice().filter(row=>row.id===GERAL_ROW_ID).concat(state.rows.slice().filter(row=>row.id!==GERAL_ROW_ID).sort((a,b)=>a.name.localeCompare(b.name))).map(row=>`<option value="${esc(row.id)}">${esc(row.name)}</option>`).join('')}</select></div>`:''}
       <div class="task-form-row"><label>Título</label><input type="text" id="taskFldTitle" value="${t?esc(t.title):''}" placeholder="Ex.: Renovar condição comercial"></div>
-      <div class="task-form-row"><label>E-mail</label><input type="email" id="taskFldEmail" value="${t?esc(t.email||''):''}" placeholder="E-mail"></div>
       <div class="task-form-row"><label>Descrição</label><textarea id="taskFldDesc" placeholder="Detalhes da tarefa (opcional)">${t?esc(t.description||''):''}</textarea></div>
       <div class="task-form-grid">
         <div class="task-form-row"><label>Prioridade</label><select id="taskFldPriority">
@@ -1993,7 +2036,7 @@ function delSelected(){
 
 function addAirline(){
   const id='a'+Date.now();
-  state.rows.push({id,name:'Nova cia aérea',iata:'',responsavel:'',kam_home:'',contato:'',cargo:'',email:'',telefone:'',contrato:'',contrato_drive:'',condicao_comercial:'',polcom_vigentes:'',plano_media:'',pm_moeda:'USD',pm_valor:'',pm_inicio:'',pm_fim:'',pm_produtos:[],pm_obs:'',cc_inicio:'',cc_fim:'',cc_drive_link:'',info_gerais:[],pos:'',kam_local:'',email_kam_local:'',pos_kam_local:'',observacoes:'',participacao:'',starred:false,contacts:[],tasks:[],categories:[]});
+  state.rows.push({id,name:'Nova cia aérea',iata:'',responsavel:'',kam_home:'',contato:'',cargo:'',email:'',telefone:'',contrato:'',contrato_drive:'',condicao_comercial:'',polcom_vigentes:'',plano_media:'',pm_moeda:'USD',pm_valor:'',pm_inicio:'',pm_fim:'',pm_produtos:[],pm_obs:'',cc_inicio:'',cc_fim:'',cc_drive_link:'',cc_obs:'',toqan_app_link:'',info_gerais:[],pos:'',kam_local:'',email_kam_local:'',pos_kam_local:'',observacoes:'',participacao:'',starred:false,contacts:[],tasks:[],categories:[]});
   persist();state.query='';el.search.value='';state.selectedId=id;render();flash('Nova cia adicionada');
 }
 
@@ -2315,48 +2358,114 @@ el.homePage.addEventListener('click',e=>{
 });
 
 el.listPane.innerHTML='<div class="list-empty">Carregando...</div>';
-(async function init(){
+async function startApp(){
   await load();
   await loadKamMeta();
   render();
   applyViewMode();
   setPage('okr');
-})();
-
+}
 </script>
 <script>
   // Sincronização ao vivo: quando qualquer pessoa salvar, todo mundo com o link aberto atualiza sozinho.
+  // Só liga de verdade depois do login (startLiveSync é chamado após autenticação válida).
   let liveSyncReady = false;
-  setTimeout(()=>{ liveSyncReady = true; }, 1500);
+  function startLiveSync(){
+    setTimeout(()=>{ liveSyncReady = true; }, 1500);
 
-  db.collection(CRM_COLLECTION).doc(STORAGE_KEY).onSnapshot((snap)=>{
-    if(!liveSyncReady || !snap.exists || snap.metadata.hasPendingWrites) return;
-    try{
-      const newRows = JSON.parse(snap.data().value);
-      if(JSON.stringify(newRows)===JSON.stringify(state.rows)) return;
-      state.rows = newRows;
-      norm();
-      render();
-      if(document.getElementById('homePage')) renderHome();
-      flash('Dados atualizados por outra pessoa');
-    }catch(e){}
-  });
+    db.collection(CRM_COLLECTION).doc(STORAGE_KEY).onSnapshot((snap)=>{
+      if(!liveSyncReady || !snap.exists || snap.metadata.hasPendingWrites) return;
+      try{
+        const newRows = JSON.parse(snap.data().value);
+        if(JSON.stringify(newRows)===JSON.stringify(state.rows)) return;
+        state.rows = newRows;
+        norm();
+        render();
+        if(document.getElementById('homePage')) renderHome();
+        flash('Dados atualizados por outra pessoa');
+      }catch(e){}
+    });
 
-  db.collection(CRM_COLLECTION).doc(KAM_META_KEY).onSnapshot((snap)=>{
-    if(!liveSyncReady || !snap.exists || snap.metadata.hasPendingWrites) return;
-    try{
-      const newMeta = JSON.parse(snap.data().value);
-      if(JSON.stringify(newMeta)===JSON.stringify(state.kamMeta)) return;
-      state.kamMeta = newMeta;
-      if(currentPage==='home') renderHome();
-    }catch(e){}
-  });
+    db.collection(CRM_COLLECTION).doc(KAM_META_KEY).onSnapshot((snap)=>{
+      if(!liveSyncReady || !snap.exists || snap.metadata.hasPendingWrites) return;
+      try{
+        const newMeta = JSON.parse(snap.data().value);
+        if(JSON.stringify(newMeta)===JSON.stringify(state.kamMeta)) return;
+        state.kamMeta = newMeta;
+        if(currentPage==='home') renderHome();
+      }catch(e){}
+    });
+  }
 </script>
 <script>
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
       navigator.serviceWorker.register('sw.js').catch(()=>{});
     });
+  }
+</script>
+<script>
+  // Controle de acesso: só entra quem logar com conta @decolar.com ou @despegar.com.
+  const ALLOWED_EMAIL_DOMAINS = ['decolar.com','despegar.com'];
+  let appStarted = false;
+
+  // Testando o arquivo direto no computador (sem publicar)? Pula a tela de login,
+  // já que o login com Google só funciona num endereço de internet de verdade.
+  // Depois de publicado no GitHub Pages (https://...), o login volta a ser obrigatório normalmente.
+  if(location.protocol==='file:'){
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    appStarted = true;
+    startApp();
+    startLiveSync();
+  }else{
+
+  const auth = firebase.auth();
+  const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+  function emailDomainAllowed(email){
+    if(!email)return false;
+    const domain = email.split('@')[1]||'';
+    return ALLOWED_EMAIL_DOMAINS.includes(domain.toLowerCase());
+  }
+
+  function showAuthError(msg){
+    const errEl = document.getElementById('authError');
+    errEl.textContent = msg;
+    errEl.style.display = 'block';
+    document.getElementById('authLoading').style.display = 'none';
+    document.getElementById('authGoogleBtn').style.display = 'flex';
+  }
+
+  document.getElementById('signOutBtn')?.addEventListener('click', ()=>{ auth.signOut(); });
+  document.getElementById('authGoogleBtn').addEventListener('click', ()=>{
+    document.getElementById('authError').style.display = 'none';
+    document.getElementById('authGoogleBtn').style.display = 'none';
+    document.getElementById('authLoading').style.display = 'block';
+    auth.signInWithPopup(googleProvider).catch(err=>{
+      showAuthError('Não foi possível entrar. Tenta de novo.');
+    });
+  });
+
+  auth.onAuthStateChanged(user=>{
+    if(!user){
+      document.getElementById('authGate').style.display = 'flex';
+      document.getElementById('mainApp').style.display = 'none';
+      return;
+    }
+    if(!emailDomainAllowed(user.email)){
+      auth.signOut();
+      showAuthError('Acesso restrito a contas @decolar.com ou @despegar.com. Você entrou com: '+(user.email||'')); 
+      return;
+    }
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    if(!appStarted){
+      appStarted = true;
+      startApp();
+      startLiveSync();
+    }
+  });
   }
 </script>
 </body>
