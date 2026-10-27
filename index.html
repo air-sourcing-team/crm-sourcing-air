@@ -2443,7 +2443,15 @@ async function startApp(){
     document.getElementById('authGoogleBtn').style.display = 'none';
     document.getElementById('authLoading').style.display = 'block';
     auth.signInWithPopup(googleProvider).catch(err=>{
-      showAuthError('Não foi possível entrar. Tenta de novo.');
+      const codeMsgs = {
+        'auth/operation-not-allowed':'O login com Google ainda não foi ativado no Firebase (Authentication → Sign-in method → Google).',
+        'auth/unauthorized-domain':'Este endereço ainda não foi autorizado no Firebase (Authentication → Settings → Authorized domains).',
+        'auth/popup-blocked':'O navegador bloqueou a janela de login. Permite pop-ups para este site e tenta de novo.',
+        'auth/popup-closed-by-user':'A janela de login foi fechada antes de terminar. Tenta de novo.',
+        'auth/cancelled-popup-request':'Tenta de novo — teve mais de uma tentativa de login ao mesmo tempo.'
+      };
+      const friendly = codeMsgs[err.code] || ('Não foi possível entrar (' + (err.code||err.message||'erro desconhecido') + ').');
+      showAuthError(friendly);
     });
   });
 
